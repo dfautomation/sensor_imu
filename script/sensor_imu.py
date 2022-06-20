@@ -98,24 +98,29 @@ class Sensor:
         self.last_cmd_vel_time = rospy.Time.now()
         self.last_ackermann_cmd_time = rospy.Time.now()
         # Serial Communication
-        try:
-            self.serial = serial.Serial(self.device_port,self.baudrate,timeout=10)
-            rospy.loginfo("Opening Sensor")
+        self.serial = None
+        while not rospy.is_shutdown():
             try:
-                if self.serial.in_waiting:
-                    self.serial.readall()
+                self.serial = serial.Serial(self.device_port,self.baudrate,timeout=10)
+                rospy.loginfo("Opening Sensor")
+                try:
+                    if self.serial.in_waiting:
+                        self.serial.readall()
+                    break
+                except:
+                    rospy.loginfo("Opening Sensor Try Faild")
+                    pass
             except:
-                rospy.loginfo("Opening Sensor Try Faild")
-                pass
-        except:
-            rospy.logerr("Can not open Serial"+self.device_port)
-            self.serial.close
-            sys.exit(0)
+                rospy.logerr("Can not open Serial "+self.device_port)
+                if self.serial:
+                    self.serial.close
+                time.sleep(1)
+                #sys.exit(0)
         rospy.loginfo("Sensor Open Succeed")
         #if move base type is ackermann car like robot and use ackermann msg ,sud ackermann topic,else sub cmd_vel topic
         self.imu_pub = rospy.Publisher(self.imu_topic,Imu,queue_size=10)
         self.mag_pub = rospy.Publisher(self.mag_topic,MagneticField,queue_size=10)
-        self.timer_communication = rospy.Timer(rospy.Duration(1.0/1000),self.timerCommunicationCB)
+        self.timer_communication = rospy.Timer(rospy.Duration(1.0/250),self.timerCommunicationCB)
         self.timer_imu = rospy.Timer(rospy.Duration(1.0/self.imu_freq),self.timerIMUCB) 
         self.timer_mag = rospy.Timer(rospy.Duration(1.0/self.mag_freq),self.timerMagCB) 
 
